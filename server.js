@@ -13,10 +13,11 @@ const mcp = new MCPClient();
 const llm = new OpenAILLMClient(mcp);
 let mcpError = null;
 
-const SCHOOL = /分機|電話|教室|場館|老師|教師|主任|組長|職稱|單位|姓名|行事曆|行程|校規|規定|法規|條文|請假|行動載具|手機|獎懲|成績|考試|補考|學分|編班|轉班|抵免|學習歷程|班級/;
+const SCHOOL = /分機|電話|教室|場館|老師|教師|主任|組長|職稱|單位|姓名|行事曆|行程|校規|規定|法規|條文|請假|行動載具|手機|獎懲|成績|考試|補考|學分|畢業|編班|轉班|抵免|學習歷程|班級/;
 const FOLLOW_UP = /^(那|那麼|他|她|這位|這個|另外|還有|同一個|該).{0,30}/;
 const MONTH_QUERY = /(?:\d{1,2}|[一二三四五六七八九十]{1,3})月/;
 const SHORT_LOOKUP = /^[\p{Script=Han}]{2,4}$/u;
+const ROOM_CODE_QUERY = /^(?:\d+[a-z]|[a-z]\d+)$/i;
 const GREETINGS = new Set(['你好','您好','謝謝','早安','午安','晚安','哈囉','嗨']);
 
 app.get('/healthz', (req, res) => {
@@ -35,7 +36,7 @@ app.post('/chat', async (req, res) => {
     const q = [...history].reverse().find(x => x.role === 'user')?.content || '';
     const recentSchoolContext = history.slice(-6).some(m => m.role === 'user' && SCHOOL.test(m.content));
     const shortLookup = SHORT_LOOKUP.test(q) && !GREETINGS.has(q);
-    const isSchoolQuery = SCHOOL.test(q) || MONTH_QUERY.test(q) || shortLookup || (recentSchoolContext && FOLLOW_UP.test(q));
+    const isSchoolQuery = SCHOOL.test(q) || MONTH_QUERY.test(q) || ROOM_CODE_QUERY.test(q.trim()) || shortLookup || (recentSchoolContext && FOLLOW_UP.test(q));
     const quick = await getQuickReply(q);
     if (quick !== null) return res.json({ reply: quick, messages: [...history, {role:'assistant', content:quick}] });
     if (isSchoolQuery && !mcp.ready) {
@@ -46,9 +47,13 @@ app.post('/chat', async (req, res) => {
     console.info(`[CHAT] id=${requestId} status=200 durationMs=${Date.now() - startedAt}`);
     res.json(result);
   } catch (e) {
-    const status = Number.isInteger(e.status) && e.status >= 400 && e.status < 600 ? e.status : 500;
-    console.error(`[CHAT ERROR] id=${requestId} status=${status} durationMs=${Date.now() - startedAt} ${e.message || e}`);
-    res.status(status).json({error:e.message || '查詢失敗', requestId});
+    // A downstream model/service may itself report status 400. That is not a
+    // malformed browser request; reserve HTTP 400 for our explicit validation
+    // and JSON parsing handlers below.
+    const upstreamStatus = Number.isInteger(e.status) && e.status >= 400 && e.status < 600 ? e.status : 500;
+    const status = upstreamStatus === 400 ? 502 : upstreamStatus;
+    console.error(`[CHAT ERROR] id=${requestId} status=${status} upstreamStatus=${upstreamStatus} durationMs=${Date.now() - startedAt} ${e.message || e}`);
+    res.status(status).json({error:status === 502 ? '查詢服務暫時無法完成請求，請稍後再試。' : (e.message || '查詢失敗'), requestId});
   }
 });
 
@@ -60,7 +65,7 @@ app.use((err, req, res, next) => {
 });
 
 const port = Number(process.env.PORT || 3000);
-app.listen(port, () => console.log(`YKVS AI Assistant listening on ${port}`));
+app.listen(port, () => console.log(`Campus AI Assistant listening on ${port}`));
 
 async function startMcp() {
   let delay = 1000;
