@@ -1,0 +1,64 @@
+{
+  "school": "新北市立鶯歌高級工商職業學校",
+  "data_sources": [
+    {
+      "id": "staff_extensions",
+      "title": "115-1分機公告版（人員與專業場館）",
+      "original_pdf": "115-1分機表(公告版)(2).pdf",
+      "local_file": "data/staff_extensions.json",
+      "effective_date": "1150914",
+      "records": 240,
+      "venue_records": 79,
+      "source_url": "https://www.ykvs.ntpc.edu.tw/"
+    },
+    {
+      "id": "class_extensions",
+      "title": "115-1班級分機表",
+      "original_pdf": "115-1班級分機表(1).pdf",
+      "local_file": "data/class_extensions.json",
+      "records": 57,
+      "broadcast_records": 3
+    },
+    {
+      "id": "academic_affairs_regulations",
+      "title": "教務處校務規定索引（成績考核、考試、段考補考、重補修等）",
+      "local_file": "data/additional_regulations.json",
+      "records": 8,
+      "source_url": "https://www.ykvs.ntpc.edu.tw/p/403-1000-337.php"
+    }
+  ],
+  "regulations": [
+    {
+      "id": "mobile_device_policy",
+      "title": "生輔組-行動載具管理規則",
+      "source_url": "https://www.ykvs.ntpc.edu.tw/p/406-1000-5274,r287.php?Lang=zh-tw",
+      "local_file": "data/regulations/mobile_device_policy.md",
+      "original_pdf": "行動載具管理規則-教官室 (1).pdf",
+      "pages": 2
+    },
+    {
+      "id": "conduct_and_class_order",
+      "title": "生輔組-鶯歌工商品德教育暨班級生活秩序競賽實施要點",
+      "source_url": "https://www.ykvs.ntpc.edu.tw/p/406-1000-19714,r287.php?Lang=zh-tw",
+      "local_file": "data/regulations/conduct_and_class_order.md",
+      "original_pdf": "新北市立鶯歌工商品德教育暨班級生活秩序競賽實施要點1140106 (1).pdf",
+      "pages": 2
+    },
+    {
+      "id": "student_rewards_discipline",
+      "title": "生輔組-學生獎懲規定",
+      "source_url": "https://www.ykvs.ntpc.edu.tw/p/406-1000-11784,r287.php?Lang=zh-tw",
+      "local_file": "data/regulations/student_rewards_discipline.md",
+      "original_pdf": "獎懲規定(113-2期末通過).pdf",
+      "pages": 6
+    },
+    {
+      "id": "student_leave_rules",
+      "title": "生輔組-學生請假規則",
+      "source_url": "https://www.ykvs.ntpc.edu.tw/p/406-1000-6514,r287.php?Lang=zh-tw",
+      "local_file": "data/regulations/student_leave_rules.md",
+      "original_pdf": "學生請假規則(114-2通過).pdf",
+      "pages": 3
+    }
+  ]
+}
