@@ -190,6 +190,29 @@
       "publication_date": "2018-05-07",
       "last_verified_date": "2026-09-26",
       "review_status": "已人工核對"
+    },
+    {
+      "data_id": "教務-09",
+      "document_id": "graduation_requirements_by_cohort",
+      "department": "教務處",
+      "unit": "實研組",
+      "category": "畢業條件與學分",
+      "title": "各學年度入學生畢業條件查詢",
+      "section_heading": "依入學年度與科別查詢畢業學分門檻",
+      "keywords": [
+        "畢業",
+        "畢業條件",
+        "畢業學分",
+        "畢業學分條件",
+        "學分條件",
+        "符合畢業條件",
+        "畢業資格"
+      ],
+      "content": "畢業學分門檻依入學年度與科別不同，應以校網「教務處－實研組－畢業條件查詢」中相應年度及科別的畢業條件表為準。115學年度入學生（117學年度畢業）的校方表格顯示，各科均須取得至少160學分；另有部定必修、實習、專業與實習科目等分項門檻，各科數字不同。若要確認個人適用門檻，請先確認入學年度及科別，並登入校務系統核對實得學分。",
+      "source_url": "https://www.ykvs.ntpc.edu.tw/p/403-1000-369.php",
+      "publication_date": "2026-03-12",
+      "last_verified_date": "2026-11-08",
+      "review_status": "已人工核對"
     }
   ]
 }

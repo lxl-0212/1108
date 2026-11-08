@@ -39,17 +39,18 @@ def room_match(query, row):
     building = compact(row.get('大樓', ''))
     if not place:
         return False
+    # When a room code is present, match that code first so generic
+    # variants like "電腦教室" cannot pull in unrelated rooms.
+    query_room = re.search(r'(?<![a-z0-9])([a-z]?\d+[a-z]?)(?=電腦教室|教室|$)', q)
+    if query_room:
+        place_room = re.search(r'([a-z]?\d+[a-z]?)電腦教室', place)
+        return bool(place_room and query_room.group(1) == place_room.group(1))
     variants = place_variants(place)
-    if any(v in q for v in variants):
+    if any(v in q for v in variants if v not in {'電腦教室', '教室'}):
         return True
     core = compact(re.sub(r'^\d+樓', '', place).replace('資處科', '資處').replace('資料處理科', '資處'))
     # 只有具辨識度的場所核心才可直接命中；避免「電腦教室」把所有電腦教室一起命中
     if core and core in q and re.search(r'[a-z0-9]', core):
-        return True
-    # 支援「6D電腦教室」「4A教室」等省略樓層與科別的查法。
-    query_room = re.search(r'(?<![a-z0-9])([a-z]?\d+[a-z]?)(?=電腦教室|教室)', q)
-    place_room = re.search(r'([a-z]?\d+[a-z]?)電腦教室', place)
-    if query_room and place_room and query_room.group(1) == place_room.group(1):
         return True
     if building and building in q and re.sub(r'^\d+樓', '', place) in q:
         return True
@@ -101,7 +102,7 @@ def extension_results(q):
             out['分機總表紀錄'] = sh
     if out:
         out['分機資料來源'] = {
-            '文件': data.get('資料名稱', '鶯歌工商分機公告版'),
+            '文件': data.get('資料名稱', '校方分機公告版'),
             '公告日期': data.get('資料日期', ''),
             '來源檔案': data.get('來源檔案', ''),
             '校方網站': 'https://www.ykvs.ntpc.edu.tw/'
@@ -128,17 +129,35 @@ def calendar_results(q):
     return {'查詢月份': month, '行事曆': out, '來源': d.get('calendar_source', '請查校方最新公告')}
 
 
+def additional_regulation_hits(query):
+    cq = compact(query)
+    records = load_json('additional_regulations.json').get('records', [])
+    hits = []
+    for record in records:
+        matched = {compact(k) for k in record.get('keywords', []) if compact(k) and compact(k) in cq}
+        if not matched:
+            continue
+        hits.append((sum(len(k) ** 2 for k in matched), {
+            '文件': record.get('title', '校務規定'),
+            '原文摘錄': record.get('content', ''),
+            '來源': record.get('source_url', 'https://www.ykvs.ntpc.edu.tw/'),
+            '類別': record.get('category', ''),
+            '資料日期': record.get('publication_date', '')
+        }))
+    hits.sort(key=lambda item: item[0], reverse=True)
+    return [item[1] for item in hits[:4]]
+
+
 def search_school_info(query: str):
     q = str(query or '').strip()
     cq = compact(q)
     if not q:
         return {'錯誤': '請輸入查詢內容。'}
-    if any(x in cq for x in ['法規','規定','條文','原文','正式文件']):
-        for fn, meta in REGULATIONS.items():
-            if any(compact(k) in cq for k in meta['keywords']):
-                p = REG / fn
-                text = p.read_text(encoding='utf-8') if p.exists() else ''
-                return {'查詢': q, '法規結果': [{'文件': meta['title'], '原文摘錄': text[:5000], '來源': 'https://www.ykvs.ntpc.edu.tw/'}]}
+    for fn, meta in REGULATIONS.items():
+        if any(compact(k) in cq for k in meta['keywords']):
+            p = REG / fn
+            text = p.read_text(encoding='utf-8') if p.exists() else ''
+            return {'查詢': q, '法規結果': [{'文件': meta['title'], '原文摘錄': text[:5000], '來源': 'https://www.ykvs.ntpc.edu.tw/'}]}
     # Exact name queries (including a bare name) should reliably select staff data.
     staff_data = load_json('staff_extensions.json')
     name_hits = [r for r in staff_data.get('分機紀錄', [])
@@ -149,10 +168,13 @@ def search_school_info(query: str):
              '姓名': r.get('姓名', ''), '分機': r.get('分機', [])}
             for r in name_hits[:12]
         ], '分機資料來源': {
-            '文件': staff_data.get('資料名稱', '鶯歌工商分機公告版'),
+            '文件': staff_data.get('資料名稱', '校方分機公告版'),
             '公告日期': staff_data.get('資料日期', ''),
             '校方網站': 'https://www.ykvs.ntpc.edu.tw/'
         }}
+    additional_hits = additional_regulation_hits(q)
+    if additional_hits:
+        return {'查詢': q, '法規結果': additional_hits}
     if any(x in cq for x in ['行事曆','行事历','行程']) or re.search(r'\d{1,2}月\d{1,2}日', cq) or month_from_query(q):
         return {'查詢': q, **calendar_results(q)}
     ext = extension_results(q)
@@ -163,7 +185,7 @@ def search_school_info(query: str):
 
 TOOL = {
     'name': 'search_school_info',
-    'description': '查詢鶯歌工商校務公開資料，包含人員、職稱、分機、班級、教室、場館、行事曆與明確指定的規定/法規。查不到就回傳沒有明確紀錄，不自行猜測。',
+    'description': '查詢校務公開資料，包含人員、職稱、分機、班級、教室、場館、行事曆與明確指定的規定/法規。查不到就回傳沒有明確紀錄，不自行猜測。',
     'inputSchema': {
         'type': 'object',
         'properties': {'query': {'type': 'string', 'description': '使用者的自然語言校務問題'}},
