@@ -39,17 +39,18 @@ def room_match(query, row):
     building = compact(row.get('大樓', ''))
     if not place:
         return False
+    # When a room code is present, match that code first so generic
+    # variants like "電腦教室" cannot pull in unrelated rooms.
+    query_room = re.search(r'(?<![a-z0-9])([a-z]?\d+[a-z]?)(?=電腦教室|教室|$)', q)
+    if query_room:
+        place_room = re.search(r'([a-z]?\d+[a-z]?)電腦教室', place)
+        return bool(place_room and query_room.group(1) == place_room.group(1))
     variants = place_variants(place)
-    if any(v in q for v in variants):
+    if any(v in q for v in variants if v not in {'電腦教室', '教室'}):
         return True
     core = compact(re.sub(r'^\d+樓', '', place).replace('資處科', '資處').replace('資料處理科', '資處'))
     # 只有具辨識度的場所核心才可直接命中；避免「電腦教室」把所有電腦教室一起命中
     if core and core in q and re.search(r'[a-z0-9]', core):
-        return True
-    # 支援「6D電腦教室」「4A教室」等省略樓層與科別的查法。
-    query_room = re.search(r'(?<![a-z0-9])([a-z]?\d+[a-z]?)(?=電腦教室|教室)', q)
-    place_room = re.search(r'([a-z]?\d+[a-z]?)電腦教室', place)
-    if query_room and place_room and query_room.group(1) == place_room.group(1):
         return True
     if building and building in q and re.sub(r'^\d+樓', '', place) in q:
         return True
