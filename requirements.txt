@@ -1,0 +1,1 @@
+# The MCP server is implemented with Python standard library only.
